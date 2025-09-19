@@ -1,0 +1,46 @@
+body {
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  background: #f0f0f0;
+  margin: 0;
+}
+
+.container {
+  text-align: center;
+}
+
+h1 {
+  margin-bottom: 10px;
+}
+#basic-colors {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+  margin-bottom: 10px;
+  justify-content: center;
+
+}
+
+.color-btn {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #333;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.controls {
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+canvas {
+  border: 1px solid #333;
+  image-rendering: pixelated; /* ensure crisp pixels */
+}
