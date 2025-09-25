@@ -1,27 +1,72 @@
 body {
   font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f0f0f0;
+}
+
+/* Navbar przyklejony do góry */
+.navbar {
+  position: fixed;  /* przyklejony do góry */
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fff;
+  padding: 5px 20px;
+  border-bottom: 2px solid #ccc;
+  box-sizing: border-box;
+  z-index: 1000; /* żeby zawsze nad innymi elementami */
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+}
+
+.navbar-icons {
+  display: flex;
+  gap: 10px;
+}
+
+.icon-btn {
+  font-size: 20px;
+  padding: 5px 10px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: transform 0.1s;
+}
+
+.icon-btn:hover {
+  transform: scale(1.2);
+}
+
+/* Kontener dla reszty elementów */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  margin-top: 70px; /* wysokość navbaru + odstęp */
+}
+
+.controls {
+  margin: 20px 0 10px 0;
   display: flex;
   justify-content: center;
-  padding: 20px;
-  background: #f0f0f0;
-  margin: 0;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
-.container {
-  text-align: center;
-}
-
-h1 {
-  margin-bottom: 10px;
-}
 #basic-colors {
   display: flex;
   gap: 5px;
   flex-wrap: wrap;
-  margin-top: 5px;
-  margin-bottom: 10px;
   justify-content: center;
-
+  margin-bottom: 20px;
 }
 
 .color-btn {
@@ -32,15 +77,21 @@ h1 {
   border-radius: 4px;
 }
 
-.controls {
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
+.canvas-wrapper {
+  position: relative;
+  display: inline-block;
+  margin: 0 auto;
 }
 
 canvas {
+  display: block;
+  image-rendering: pixelated;
   border: 1px solid #333;
-  image-rendering: pixelated; /* ensure crisp pixels */
+}
+
+#grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
 }

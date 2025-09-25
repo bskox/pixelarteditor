@@ -8,22 +8,37 @@
 </head>
 <body>
   <div class="container">
-    <h1>🎨 Pixel Art Editor</h1>
+
+    <!-- Navbar z tytułem i ikonami -->
+    <nav class="navbar">
+      <h1 class="title">🎨 Pixel Art Editor</h1>
+      <div class="navbar-icons">
+        <button id="undo-btn" class="icon-btn" title="Undo">↩️</button>
+        <button id="redo-btn" class="icon-btn" title="Redo">↪️</button>
+        <button id="clear-btn" class="icon-btn" title="Clear">🗑️</button>
+        <button id="save-btn" class="icon-btn" title="Save">💾</button>
+        <button id="resize-btn" class="icon-btn" title="Resize">📐</button>
+      </div>
+    </nav>
+
+    <div class="controls">
+      <input type="color" id="color-picker" value="#ff0000">
+      <label for="shade">Shade:</label>
+      <input type="range" id="shade" min="0" max="100" value="0">
+      
+      <label for="grid-width">Width:</label>
+      <input type="number" id="grid-width" min="8" max="64" value="16">
+      
+      <label for="grid-height">Height:</label>
+      <input type="number" id="grid-height" min="8" max="64" value="16">
+    </div>
+
+    <div id="basic-colors"></div>
     
-<div class="controls">
-  <input type="color" id="color-picker" value="#ff0000">
-  
-  <button id="clear-btn">Clear</button>
-  <button id="save-btn">Save as PNG</button>
-  <label for="grid-size">Grid:</label>
-  <input type="number" id="grid-size" min="8" max="64" value="16">
-  <button id="resize-btn">Resize</button>
-</div>
-  <div id="basic-colors">
-    <!-- Basic color buttons will go here -->
-  </div>
-    
-    <canvas id="canvas"></canvas>
+    <div class="canvas-wrapper">
+      <canvas id="grid"></canvas>
+      <canvas id="canvas"></canvas>
+    </div>
   </div>
 
   <script src="app.js"></script>
