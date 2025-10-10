@@ -13,9 +13,14 @@ const shadeSlider = document.getElementById('shade');
 const gridWidthInput = document.getElementById('grid-width');
 const gridHeightInput = document.getElementById('grid-height');
 const resizeBtn = document.getElementById('resize-btn');
+const nightModeBtn = document.getElementById('night-mode-btn');
 
-let gridWidth = 16;
-let gridHeight = 16;
+const brushSizeSelect = document.getElementById('brushSize');
+const brushIncreaseBtn = document.getElementById('brush-increase');
+const brushDecreaseBtn = document.getElementById('brush-decrease');
+
+let gridWidth = 32;
+let gridHeight = 32;
 let pixelSize = 20;
 let isDrawing = false;
 let currentColor = colorPicker.value;
@@ -23,7 +28,9 @@ let currentColor = colorPicker.value;
 let undoStack = [];
 let redoStack = [];
 
-// ================== Canvas Setup ==================
+let brushSize = parseInt(brushSizeSelect.value);
+let isPipetteActive = false;
+
 function setCanvas() {
   canvas.width = gridWidth * pixelSize;
   canvas.height = gridHeight * pixelSize;
@@ -53,8 +60,12 @@ function drawGrid() {
   }
 }
 
-// ================== Colors ==================
-const basicColors = ["#FF0000", "#0000FF", "#008000", "#000000", "#FFFFFF", "#FFA500"];
+const basicColors = [
+  "#FFFFFF", "#FF0000", "#028bed", "#0eeb15", "#000000",
+  "#FFA500", "#82440a", "#f760ed","#f9fc30", "#f59920",
+  "#964B00", "#808080", "#FFFF00", "#00FF00", "#00FFFF",
+  "#0000FF", "#800080", "#FFC0CB", "#A52A2A", "#808000"
+];
 const basicColorsContainer = document.getElementById("basic-colors");
 
 basicColors.forEach(color => {
@@ -72,7 +83,6 @@ colorPicker.addEventListener('input', (e) => {
   currentColor = e.target.value;
 });
 
-// ================== Shade Function ==================
 function hexToRgb(hex) {
   hex = hex.replace("#", "");
   const bigint = parseInt(hex, 16);
@@ -80,6 +90,10 @@ function hexToRgb(hex) {
   const g = (bigint >> 8) & 255;
   const b = bigint & 255;
   return { r, g, b };
+}
+
+function rgbToHex(r,g,b){
+  return "#" + ((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
 }
 
 function rgbToHsl(r, g, b) {
@@ -121,10 +135,6 @@ function hslToRgb(h,s,l){
   return { r: Math.round(r*255), g: Math.round(g*255), b: Math.round(b*255) };
 }
 
-function rgbToHex(r,g,b){
-  return "#" + ((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
-}
-
 function shadeColor(hex, amount){
   const rgb = hexToRgb(hex);
   let hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
@@ -133,17 +143,26 @@ function shadeColor(hex, amount){
   return rgbToHex(shaded.r, shaded.g, shaded.b);
 }
 
-// ================== Drawing ==================
-function drawPixel(x,y){
+function drawPixel(x, y) {
   let colorToDraw = currentColor;
-  if(shadeSlider.value > 0){
+
+  if (shadeSlider.value > 0) {
     colorToDraw = shadeColor(currentColor, parseInt(shadeSlider.value));
   }
+
   ctx.fillStyle = colorToDraw;
-  ctx.fillRect(x*pixelSize, y*pixelSize, pixelSize, pixelSize);
+
+  for (let dx = 0; dx < brushSize; dx++) {
+    for (let dy = 0; dy < brushSize; dy++) {
+      const px = x + dx;
+      const py = y + dy;
+      if (px < gridWidth && py < gridHeight) {
+        ctx.fillRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
+      }
+    }
+  }
 }
 
-// ================== Undo/Redo ==================
 function saveState(){
   undoStack.push(ctx.getImageData(0,0,canvas.width,canvas.height));
   redoStack = [];
@@ -165,20 +184,35 @@ function redo(){
   }
 }
 
-// ================== Mouse Events ==================
-canvas.addEventListener('mousedown', e => { saveState(); isDrawing=true; });
-canvas.addEventListener('mouseup', () => isDrawing=false);
-canvas.addEventListener('mouseleave', () => isDrawing=false);
+canvas.addEventListener('mousedown', e => {
+  if (isPipetteActive) {
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left));
+    const y = Math.floor((e.clientY - rect.top));
+    const pixelData = ctx.getImageData(x, y, 1, 1).data;
+    const hex = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
+    currentColor = hex;
+    colorPicker.value = hex;
+    isPipetteActive = false;
+    canvas.style.cursor = 'crosshair';
+    pipetteBtn.classList.remove('active');
+  } else {
+    saveState();
+    isDrawing = true;
+  }
+});
+ 
+canvas.addEventListener('mouseup', () => isDrawing = false);
 
+ 
 canvas.addEventListener('mousemove', e => {
-  if(!isDrawing) return;
+  if (!isDrawing) return;
   const rect = canvas.getBoundingClientRect();
-  const x = Math.floor((e.clientX-rect.left)/pixelSize);
-  const y = Math.floor((e.clientY-rect.top)/pixelSize);
-  drawPixel(x,y);
+  const x = Math.floor((e.clientX - rect.left) / pixelSize);
+  const y = Math.floor((e.clientY - rect.top) / pixelSize);
+  drawPixel(x, y);
 });
 
-// ================== Buttons ==================
 undoBtn.addEventListener('click', undo);
 redoBtn.addEventListener('click', redo);
 
@@ -208,4 +242,62 @@ resizeBtn.addEventListener('click', () => {
   }
 });
 
+nightModeBtn.addEventListener('click', () => {
+  document.body.classList.toggle('night-mode');
+  nightModeBtn.classList.toggle('active');
+});
+
+// pipette tool
+const pipetteBtn = document.createElement('button');
+pipetteBtn.id = 'pipette-btn';
+pipetteBtn.className = 'icon-btn';
+pipetteBtn.title = 'Pipette Tool 🎨';
+pipetteBtn.textContent = '🎨';
+const navbarIcons = document.querySelector('.navbar-icons');
+navbarIcons.insertBefore(pipetteBtn, undoBtn); 
+pipetteBtn.addEventListener('click', () => {
+  isPipetteActive = !isPipetteActive;
+  pipetteBtn.classList.toggle('active');
+  canvas.style.cursor = isPipetteActive ? 'copy' : 'crosshair';
+});
+
+// brush size select
+brushSizeSelect.addEventListener('change', (e) => {
+  brushSize = parseInt(e.target.value);
+});
+
+// brush size increase/decrease
+brushIncreaseBtn.addEventListener('click', () => {
+  let newSize = Math.min(10, brushSize + 1);
+  brushSize = newSize;
+  brushSizeSelect.value = newSize;
+});
+
+brushDecreaseBtn.addEventListener('click', () => {
+  let newSize = Math.max(1, brushSize - 1);
+  brushSize = newSize;
+  brushSizeSelect.value = newSize;
+});
+
 setCanvas();
+
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+    e.preventDefault(); undo();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+    e.preventDefault(); redo();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
+    e.preventDefault(); redo();
+  }
+  if(e.key.toLowerCase() === 'p'){
+    pipetteBtn.click();
+  }
+  if(e.key.toLowerCase() === 'r'){
+    resizeBtn.click();
+  }
+  if(e.key.toLowerCase() === 'delete' || e.key.toLowerCase() === 'backspace'){
+    clearBtn.click();
+  }
+});
