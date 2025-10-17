@@ -21,6 +21,8 @@ const brushSizeSelect = document.getElementById('brushSize');
 const brushIncreaseBtn = document.getElementById('brush-increase');
 const brushDecreaseBtn = document.getElementById('brush-decrease');
 
+let nr = 0;
+let ntr = 1;
 let gridWidth = 32;
 let gridHeight = 32;
 let pixelSize = 20;
@@ -138,12 +140,14 @@ function drawPixel(x, y, emit = true, color = null, size = brushSize) {
   }
   ctx.fillStyle = colorToDraw;
 
-  for (let dx = 0; dx < size; dx++) {
-    for (let dy = 0; dy < size; dy++) {
-      const px = x + dx, py = y + dy;
+  for (let dx = 0; dx < brushSize; dx++) {
+    for (let dy = 0; dy < brushSize; dy++) {
+      const px = x + dx;
+      const py = y + dy;
       if (px < gridWidth && py < gridHeight) {
-        ctx.fillRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
-      }
+          if(brushSize == 1){ctx.fillRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
+          }else if(brushSize == ntr){ctx.fillRect((px - nr) * pixelSize, (py - nr) * pixelSize, pixelSize, pixelSize);}
+          }
     }
   }
 
@@ -247,17 +251,29 @@ pipetteBtn.addEventListener('click', () => {
   canvas.style.cursor = isPipetteActive ? 'copy' : 'crosshair';
 });
 
-// Zmiana rozmiaru pędzla
-brushSizeSelect.addEventListener('change', e => brushSize = parseInt(e.target.value));
-brushIncreaseBtn.addEventListener('click', () => {
-  brushSize = Math.min(10, brushSize + 1);
-  brushSizeSelect.value = brushSize;
-});
-brushDecreaseBtn.addEventListener('click', () => {
-  brushSize = Math.max(1, brushSize - 1);
-  brushSizeSelect.value = brushSize;
-});
 
+// Zmiana rozmiaru pędzla
+brushIncreaseBtn.addEventListener('click', () => {
+  let newSize = Math.min(10, brushSize + 1);
+  brushSize = newSize;
+  brushSizeSelect.value = newSize;
+  ntr ++;
+  if(ntr % 2 == 1 && ntr > 1){
+  nr ++;
+  }
+});
+if(brushSize > 1){
+brushDecreaseBtn.addEventListener('click', () => {
+  let newSize = Math.max(1, brushSize - 1);
+  brushSize = newSize;
+  brushSizeSelect.value = newSize;
+
+  if(ntr % 2 == 1 && ntr > 1){
+  nr --;
+  }
+  ntr --;
+});
+}
 // Skróty klawiaturowe
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
