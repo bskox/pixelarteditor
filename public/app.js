@@ -7,6 +7,7 @@ const ctx = canvas.getContext('2d');
 const gridCanvas = document.getElementById('grid');
 const gridCtx = gridCanvas.getContext('2d');
 
+const eraserBtn = document.getElementById("eraser-btn");
 const colorPicker = document.getElementById('color-picker');
 const clearBtn = document.getElementById('clear-btn');
 const saveBtn = document.getElementById('save-btn');
@@ -132,24 +133,36 @@ function shadeColor(hex, amount){
   return rgbToHex(shaded.r, shaded.g, shaded.b);
 }
 
-// Rysowanie pikseli
+// Rysowanie pikseli z obsługą transparentnej gumki
 function drawPixel(x, y, emit = true, color = null, size = brushSize) {
   let colorToDraw = color || currentColor;
-  if (shadeSlider.value > 0 && !color) {
-    colorToDraw = shadeColor(currentColor, parseInt(shadeSlider.value));
-  }
-  ctx.fillStyle = colorToDraw;
+
+  ctx.save();
 
   for (let dx = 0; dx < brushSize; dx++) {
     for (let dy = 0; dy < brushSize; dy++) {
       const px = x + dx;
       const py = y + dy;
       if (px < gridWidth && py < gridHeight) {
-          if(brushSize == 1){ctx.fillRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
-          }else if(brushSize == ntr){ctx.fillRect((px - nr) * pixelSize, (py - nr) * pixelSize, pixelSize, pixelSize);}
+        if (colorToDraw === 'eraser') {
+          ctx.clearRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
+        } else {
+          let finalColor = colorToDraw;
+          if (shadeSlider.value > 0 && !color) {
+            finalColor = shadeColor(currentColor, parseInt(shadeSlider.value));
           }
+          ctx.fillStyle = finalColor;
+          if (brushSize == 1) {
+            ctx.fillRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
+          } else if (brushSize == ntr) {
+            ctx.fillRect((px - nr) * pixelSize, (py - nr) * pixelSize, pixelSize, pixelSize);
+          }
+        }
+      }
     }
   }
+
+  ctx.restore();
 
   if (emit && socket) {
     socket.emit("draw_pixel", { x, y, color: colorToDraw, size });
@@ -251,29 +264,35 @@ pipetteBtn.addEventListener('click', () => {
   canvas.style.cursor = isPipetteActive ? 'copy' : 'crosshair';
 });
 
-
 // Zmiana rozmiaru pędzla
 brushIncreaseBtn.addEventListener('click', () => {
   let newSize = Math.min(10, brushSize + 1);
   brushSize = newSize;
   brushSizeSelect.value = newSize;
   ntr ++;
-  if(ntr % 2 == 1 && ntr > 1){
-  nr ++;
-  }
+  if(ntr % 2 == 1 && ntr > 1){ nr ++; }
 });
-if(brushSize > 1){
 brushDecreaseBtn.addEventListener('click', () => {
   let newSize = Math.max(1, brushSize - 1);
   brushSize = newSize;
   brushSizeSelect.value = newSize;
-
-  if(ntr % 2 == 1 && ntr > 1){
-  nr --;
-  }
+  if(ntr % 2 == 1 && ntr > 1){ nr --; }
   ntr --;
 });
-}
+
+// Gumka (transparent)
+eraserBtn.addEventListener('click', () => {
+  if (currentColor !== 'eraser') {
+    currentColor = 'eraser';
+    eraserBtn.classList.add('active');
+    canvas.style.cursor = 'grab';
+  } else {
+    currentColor = colorPicker.value;
+    eraserBtn.classList.remove('active');
+    canvas.style.cursor = 'crosshair';
+  }
+});
+
 // Skróty klawiaturowe
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
@@ -292,8 +311,6 @@ socket.on("draw_pixel", data => drawPixel(data.x, data.y, false, data.color, dat
 socket.on("clear_canvas", () => { ctx.clearRect(0,0,canvas.width,canvas.height); drawGrid(); });
 socket.on("undo_action", () => undo(false));
 socket.on("redo_action", () => redo(false));
-
-
 socket.on("request_canvas_state", () => {
   const data = canvas.toDataURL();
   socket.emit("send_canvas_state", data);
@@ -303,6 +320,5 @@ socket.on("load_canvas_state", (imgData) => {
   img.onload = () => ctx.drawImage(img, 0, 0);
   img.src = imgData;
 });
-
 
 socket.emit("new_client_ready");
