@@ -1,0 +1,1 @@
+## TU DAJ SKRYPTY
