@@ -7,7 +7,6 @@ const ctx = canvas.getContext('2d');
 const gridCanvas = document.getElementById('grid');
 const gridCtx = gridCanvas.getContext('2d');
 
-const eraserBtn = document.getElementById("eraser-btn");
 const colorPicker = document.getElementById('color-picker');
 const clearBtn = document.getElementById('clear-btn');
 const saveBtn = document.getElementById('save-btn');
@@ -133,36 +132,24 @@ function shadeColor(hex, amount){
   return rgbToHex(shaded.r, shaded.g, shaded.b);
 }
 
-// Rysowanie pikseli z obsługą transparentnej gumki
+// Rysowanie pikseli
 function drawPixel(x, y, emit = true, color = null, size = brushSize) {
   let colorToDraw = color || currentColor;
-
-  ctx.save();
+  if (shadeSlider.value > 0 && !color) {
+    colorToDraw = shadeColor(currentColor, parseInt(shadeSlider.value));
+  }
+  ctx.fillStyle = colorToDraw;
 
   for (let dx = 0; dx < brushSize; dx++) {
     for (let dy = 0; dy < brushSize; dy++) {
       const px = x + dx;
       const py = y + dy;
       if (px < gridWidth && py < gridHeight) {
-        if (colorToDraw === 'eraser') {
-          ctx.clearRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
-        } else {
-          let finalColor = colorToDraw;
-          if (shadeSlider.value > 0 && !color) {
-            finalColor = shadeColor(currentColor, parseInt(shadeSlider.value));
+          if(brushSize == 1){ctx.fillRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
+          }else if(brushSize == ntr){ctx.fillRect((px - nr) * pixelSize, (py - nr) * pixelSize, pixelSize, pixelSize);}
           }
-          ctx.fillStyle = finalColor;
-          if (brushSize == 1) {
-            ctx.fillRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
-          } else if (brushSize == ntr) {
-            ctx.fillRect((px - nr) * pixelSize, (py - nr) * pixelSize, pixelSize, pixelSize);
-          }
-        }
-      }
     }
   }
-
-  ctx.restore();
 
   if (emit && socket) {
     socket.emit("draw_pixel", { x, y, color: colorToDraw, size });
@@ -177,20 +164,32 @@ function saveState(){
 // Cofanie i przywracanie z synchronizacją
 function undo(emit = true) {
   if (undoStack.length > 0) {
-    redoStack.push(ctx.getImageData(0,0,canvas.width,canvas.height));
+    redoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     const prev = undoStack.pop();
-    ctx.putImageData(prev,0,0);
-    if (emit && socket) socket.emit("undo_action");
+    ctx.putImageData(prev, 0, 0);
+
+    // Send full updated canvas image to others
+    if (emit && socket) {
+      const data = canvas.toDataURL("image/png");
+      socket.emit("undo_action", data);
+    }
   }
 }
+
 function redo(emit = true) {
   if (redoStack.length > 0) {
-    undoStack.push(ctx.getImageData(0,0,canvas.width,canvas.height));
+    undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     const next = redoStack.pop();
-    ctx.putImageData(next,0,0);
-    if (emit && socket) socket.emit("redo_action");
+    ctx.putImageData(next, 0, 0);
+
+    // Send full updated canvas image to others
+    if (emit && socket) {
+      const data = canvas.toDataURL("image/png");
+      socket.emit("redo_action", data);
+    }
   }
 }
+
 
 // Rysowanie myszy
 canvas.addEventListener('mousedown', e => {
@@ -264,35 +263,29 @@ pipetteBtn.addEventListener('click', () => {
   canvas.style.cursor = isPipetteActive ? 'copy' : 'crosshair';
 });
 
+
 // Zmiana rozmiaru pędzla
 brushIncreaseBtn.addEventListener('click', () => {
   let newSize = Math.min(10, brushSize + 1);
   brushSize = newSize;
   brushSizeSelect.value = newSize;
   ntr ++;
-  if(ntr % 2 == 1 && ntr > 1){ nr ++; }
+  if(ntr % 2 == 1 && ntr > 1){
+  nr ++;
+  }
 });
+if(brushSize > 1){
 brushDecreaseBtn.addEventListener('click', () => {
   let newSize = Math.max(1, brushSize - 1);
   brushSize = newSize;
   brushSizeSelect.value = newSize;
-  if(ntr % 2 == 1 && ntr > 1){ nr --; }
+
+  if(ntr % 2 == 1 && ntr > 1){
+  nr --;
+  }
   ntr --;
 });
-
-// Gumka (transparent)
-eraserBtn.addEventListener('click', () => {
-  if (currentColor !== 'eraser') {
-    currentColor = 'eraser';
-    eraserBtn.classList.add('active');
-    canvas.style.cursor = 'grab';
-  } else {
-    currentColor = colorPicker.value;
-    eraserBtn.classList.remove('active');
-    canvas.style.cursor = 'crosshair';
-  }
-});
-
+}
 // Skróty klawiaturowe
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
@@ -311,14 +304,20 @@ socket.on("draw_pixel", data => drawPixel(data.x, data.y, false, data.color, dat
 socket.on("clear_canvas", () => { ctx.clearRect(0,0,canvas.width,canvas.height); drawGrid(); });
 socket.on("undo_action", () => undo(false));
 socket.on("redo_action", () => redo(false));
+
+
 socket.on("request_canvas_state", () => {
   const data = canvas.toDataURL();
   socket.emit("send_canvas_state", data);
 });
 socket.on("load_canvas_state", (imgData) => {
   const img = new Image();
-  img.onload = () => ctx.drawImage(img, 0, 0);
+  img.onload = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+  };
   img.src = imgData;
 });
+
 
 socket.emit("new_client_ready");
