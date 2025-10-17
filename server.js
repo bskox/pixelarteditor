@@ -16,26 +16,39 @@ app.get("/", (req, res) => {
 io.on("connection", (socket) => {
   console.log("🟢 Użytkownik połączony:", socket.id);
 
+  // Drawing pixels
   socket.on("draw_pixel", (data) => {
     socket.broadcast.emit("draw_pixel", data);
   });
 
+  // Clear canvas
   socket.on("clear_canvas", () => {
     socket.broadcast.emit("clear_canvas");
   });
 
-  socket.on("undo", (imageData) => {
-    socket.broadcast.emit("undo", imageData);
+  // Undo / Redo synchronization
+ socket.on("undo_action", (data) => {
+  socket.broadcast.emit("load_canvas_state", data);
+});
+
+socket.on("redo_action", (data) => {
+  socket.broadcast.emit("load_canvas_state", data);
+});
+
+  // Canvas state transfer for new clients (optional)
+  socket.on("send_canvas_state", (data) => {
+    socket.broadcast.emit("load_canvas_state", data);
   });
 
-  socket.on("redo", (imageData) => {
-    socket.broadcast.emit("redo", imageData);
+  socket.on("new_client_ready", () => {
+    socket.broadcast.emit("request_canvas_state");
   });
 
   socket.on("disconnect", () => {
     console.log("🔴 Użytkownik rozłączony:", socket.id);
   });
 });
+
 
 const PORT = 3000;
 server.listen(PORT, () => {
