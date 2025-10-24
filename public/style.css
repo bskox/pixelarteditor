@@ -1,6 +1,6 @@
-*{
+/**{
   border:1px solid red;
-}
+}*/
 body {
   font-family: "Montserrat", sans-serif;
   margin: 0;
@@ -29,7 +29,16 @@ body.night-mode {
   background: #25252a;
   color: white;
 }
- 
+ #pipette-btn {
+  width: 30px;
+  height: 30px;
+  margin-top: 5px;
+  background: url('img/pipette.png') center/contain no-repeat;
+  border: none;
+  cursor: pointer;
+}
+
+
 .navbar {
   position: fixed;
   top: 0;
@@ -70,6 +79,7 @@ body.night-mode {
   border: none;
   background: none;
   transition: transform 0.1s, color 0.2s;
+  
 }
  
 .icon-btn:hover {
@@ -100,25 +110,12 @@ body.night-mode {
   color:white;
   background-color: rgba(0,0,0,0.4);
 }  
-#basic-colors {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-}
- 
-#basic-colors {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-} 
-#basic-colors {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
+img{
+  width: 30px;
+  height:30px;
+  display: block;
 }
 
- 
- 
 .controls label.night-mode {
   color: white;
 }
