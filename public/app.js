@@ -20,6 +20,10 @@ const nightModeBtn = document.getElementById('night-mode-btn');
 const brushSizeSelect = document.getElementById('brushSize');
 const brushIncreaseBtn = document.getElementById('brush-increase');
 const brushDecreaseBtn = document.getElementById('brush-decrease');
+brushDecreaseBtn.disabled = true;
+
+
+
 
 let nr = 0;
 let ntr = 1;
@@ -269,23 +273,27 @@ brushIncreaseBtn.addEventListener('click', () => {
   let newSize = Math.min(10, brushSize + 1);
   brushSize = newSize;
   brushSizeSelect.value = newSize;
+    brushDecreaseBtn.disabled = false;
   ntr ++;
   if(ntr % 2 == 1 && ntr > 1){
   nr ++;
   }
 });
-if(brushSize > 1){
-brushDecreaseBtn.addEventListener('click', () => {
+
+  brushDecreaseBtn.addEventListener('click', () => {
   let newSize = Math.max(1, brushSize - 1);
   brushSize = newSize;
   brushSizeSelect.value = newSize;
-
+    if(brushSize == 1){
+      brushDecreaseBtn.disabled = true;
+    }
   if(ntr % 2 == 1 && ntr > 1){
   nr --;
   }
   ntr --;
+
 });
-}
+
 // Skróty klawiaturowe
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
