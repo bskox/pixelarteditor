@@ -26,6 +26,11 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("clear_canvas");
   });
 
+  socket.on("resizeBtn", (data) => {
+    socket.broadcast.emit("resize_canvas", data);
+    socket.broadcast.emit("resizeBtn", data);
+  });
+
   // Undo / Redo synchronization
  socket.on("undo_action", (data) => {
   socket.broadcast.emit("load_canvas_state", data);
