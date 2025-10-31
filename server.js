@@ -32,15 +32,21 @@ io.on("connection", (socket) => {
   });
 
   // Undo / Redo synchronization
- socket.on("undo_action", (data) => {
-  socket.broadcast.emit("load_canvas_state", data);
-});
+  socket.on("undo_action", (data) => {
+    socket.broadcast.emit("load_canvas_state", data);
+  });
 
-socket.on("redo_action", (data) => {
-  socket.broadcast.emit("load_canvas_state", data);
-});
+  socket.on("redo_action", (data) => {
+    socket.broadcast.emit("load_canvas_state", data);
+  });
 
-  // Canvas state transfer for new clients (optional)
+  // NOWE: Synchronizacja wczytywania obrazów
+  socket.on("load_canvas_state", (data) => {
+    // Wyślij stan canvas do wszystkich innych klientów
+    socket.broadcast.emit("load_canvas_state", data);
+  });
+
+  // Canvas state transfer for new clients
   socket.on("send_canvas_state", (data) => {
     socket.broadcast.emit("load_canvas_state", data);
   });
@@ -53,7 +59,6 @@ socket.on("redo_action", (data) => {
     console.log("🔴 Użytkownik rozłączony:", socket.id);
   });
 });
-
 
 const PORT = 3000;
 server.listen(PORT, () => {
