@@ -278,6 +278,109 @@ saveBtn.addEventListener('click', () => {
   link.click();
 });
 
+// Otwieranie pliku z dysku i rysowanie go na canvasie
+const openBtn = document.getElementById('open-btn');
+const openFileInput = document.getElementById('open-file');
+
+if (openBtn && openFileInput) {
+  openBtn.addEventListener('click', () => openFileInput.click());
+  
+  openFileInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) {
+      console.log('Nie wybrano pliku.');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const img = new Image();
+      img.onload = function() {
+        try {
+          saveState();
+        } catch (err) {
+          console.warn('Nie można zapisać stanu przed wczytaniem:', err);
+        }
+        
+        // Odczytaj rozmiar obrazu w pikselach
+        const imageWidth = img.naturalWidth || img.width;
+        const imageHeight = img.naturalHeight || img.height;
+        
+        if (!imageWidth || !imageHeight) {
+          console.error('Nie udało się odczytać rozmiaru obrazu');
+          alert('Błąd wczytywania obrazu');
+          return;
+        }
+        
+        console.log('Wczytano obraz o rozmiarze:', imageWidth, 'x', imageHeight, 'pikseli');
+        
+        // KLUCZOWE: Sprawdź czy obraz jest podzielny przez pixelSize
+        // Jeśli tak, to prawdopodobnie jest to obraz z tego edytora
+        if (imageWidth % pixelSize === 0 && imageHeight % pixelSize === 0) {
+          // Obraz pochodzi z tego edytora - podziel przez pixelSize aby uzyskać rozmiar siatki
+          gridWidth = imageWidth / pixelSize;
+          gridHeight = imageHeight / pixelSize;
+          console.log('Wykryto obraz z edytora, rozmiar siatki:', gridWidth, 'x', gridHeight);
+        } else {
+          // Obraz zewnętrzny - użyj jego rzeczywistego rozmiaru jako rozmiar siatki
+          gridWidth = imageWidth;
+          gridHeight = imageHeight;
+          console.log('Obraz zewnętrzny, każdy piksel = jeden kwadrat siatki');
+        }
+        
+        // Zaktualizuj pola input w UI
+        gridWidthInput.value = gridWidth;
+        gridHeightInput.value = gridHeight;
+        
+        // Ustaw rozmiar canvas
+        canvas.width = gridWidth * pixelSize;
+        canvas.height = gridHeight * pixelSize;
+        gridCanvas.width = gridWidth * pixelSize;
+        gridCanvas.height = gridHeight * pixelSize;
+        
+        // Wyłącz wygładzanie
+        ctx.imageSmoothingEnabled = false;
+        ctx.mozImageSmoothingEnabled = false;
+        ctx.webkitImageSmoothingEnabled = false;
+        ctx.msImageSmoothingEnabled = false;
+        gridCtx.imageSmoothingEnabled = false;
+        
+        // Wyczyść canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Narysuj obraz na całym canvas (dopasuje się automatycznie)
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Narysuj siatkę
+        drawGrid();
+        
+        // Wyślij stan do innych klientów przez Socket.IO
+        if (socket && socket.connected) {
+          socket.emit('load_canvas_state', canvas.toDataURL());
+        }
+        
+        console.log('Obraz wczytany pomyślnie! Siatka:', gridWidth, 'x', gridHeight);
+      };
+      
+      img.onerror = function() {
+        console.error('Błąd ładowania obrazu');
+        alert('Nie udało się wczytać obrazu');
+      };
+      
+      img.src = event.target.result;
+    };
+    
+    reader.onerror = function() {
+      console.error('Błąd odczytu pliku');
+      alert('Nie udało się odczytać pliku');
+    };
+    
+    reader.readAsDataURL(file);
+  });
+} else {
+  console.warn('Przycisk Open lub input file nie został znaleziony');
+}
+
 resizeBtn.addEventListener('click', () => {
   
   const newWidth = parseInt(gridWidthInput.value);
@@ -406,5 +509,61 @@ socket.on("load_canvas_state", (imgData) => {
   img.src = imgData;
 });
 
+// Ulepszona synchronizacja load_canvas_state
+socket.on("load_canvas_state", (imgData) => {
+  const img = new Image();
+  img.onload = () => {
+    // Sprawdź czy obraz ma inny rozmiar niż obecny canvas
+    const imageWidth = img.naturalWidth || img.width;
+    const imageHeight = img.naturalHeight || img.height;
+    
+    // Oblicz rozmiar siatki z obrazu
+    let newGridWidth = gridWidth;
+    let newGridHeight = gridHeight;
+    
+    if (imageWidth % pixelSize === 0 && imageHeight % pixelSize === 0) {
+      // Obraz z edytora - podziel przez pixelSize
+      newGridWidth = imageWidth / pixelSize;
+      newGridHeight = imageHeight / pixelSize;
+    } else {
+      // Obraz zewnętrzny - użyj bezpośrednio
+      newGridWidth = imageWidth;
+      newGridHeight = imageHeight;
+    }
+    
+    // Jeśli rozmiar się zmienił, zaktualizuj canvas
+    if (newGridWidth !== gridWidth || newGridHeight !== gridHeight) {
+      gridWidth = newGridWidth;
+      gridHeight = newGridHeight;
+      
+      // Zaktualizuj pola input
+      if (gridWidthInput) gridWidthInput.value = gridWidth;
+      if (gridHeightInput) gridHeightInput.value = gridHeight;
+      
+      // Zmień rozmiar canvas
+      canvas.width = gridWidth * pixelSize;
+      canvas.height = gridHeight * pixelSize;
+      gridCanvas.width = gridWidth * pixelSize;
+      gridCanvas.height = gridHeight * pixelSize;
+      
+      // Wyłącz wygładzanie
+      ctx.imageSmoothingEnabled = false;
+      ctx.mozImageSmoothingEnabled = false;
+      ctx.webkitImageSmoothingEnabled = false;
+      ctx.msImageSmoothingEnabled = false;
+      gridCtx.imageSmoothingEnabled = false;
+    }
+    
+    // Wyczyść i narysuj obraz
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    
+    // Narysuj siatkę
+    drawGrid();
+    
+    console.log('Zsynchronizowano canvas z innym użytkownikiem');
+  };
+  img.src = imgData;
+});
 
 socket.emit("new_client_ready");
