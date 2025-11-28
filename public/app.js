@@ -485,13 +485,13 @@ function applyZoom() {
   wrapper.style.height = `${canvas.height * zoomLevel}px`;
 }
 const zoomInBtn = document.createElement('button');
-zoomInBtn.textContent = '+';
+zoomOutBtn.innerHTML = `<img src="img/plus.png" alt="Zoom In"></img>`;
 zoomInBtn.title = 'Zoom In';
 zoomInBtn.className = 'icon-btn';
 document.querySelector('.navbar-icons').appendChild(zoomInBtn);
 
 const zoomOutBtn = document.createElement('button');
-zoomOutBtn.textContent = '–';
+zoomOutBtn.innerHTML = `<img src="img/minus.png" alt="Zoom In"></img>`;
 zoomOutBtn.title = 'Zoom Out';
 zoomOutBtn.className = 'icon-btn';
 document.querySelector('.navbar-icons').appendChild(zoomOutBtn);
@@ -605,4 +605,5 @@ socket.on("load_canvas_state", (imgData) => {
 });
 
 socket.emit("new_client_ready");
+
 
