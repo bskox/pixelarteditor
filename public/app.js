@@ -26,8 +26,8 @@ brushSizeSelect.value = 1;
 
 let zoomLevel = 1;
 const ZOOM_STEP = 0.1;
-const MAX_ZOOM = 5;
-const MIN_ZOOM = 0.;
+const MAX_ZOOM = 20;
+const MIN_ZOOM = 0.1;
 let nr = 0;
 let ntr = 1;
 let gridWidth = 32;
@@ -140,13 +140,11 @@ function shadeColor(hex, amount){
   return rgbToHex(shaded.r, shaded.g, shaded.b);
 }
 
-// Dodanie emitowania rozmiaru pędzla
-function drawPixel(x, y, emit = true, color = null, size = null) {
-  const brush = size || brushSize;
-
-  if (isEraserActive && !color) {
-    for (let dx = 0; dx < brush; dx++) {
-      for (let dy = 0; dy < brush; dy++) {
+// Rysowanie pikseli
+function drawPixel(x, y, emit = true, color = null, size = brushSize) {
+  if (isEraserActive) {
+    for (let dx = 0; dx < brushSize; dx++) {
+      for (let dy = 0; dy < brushSize; dy++) {
         const px = x + dx;
         const py = y + dy;
         if (px < gridWidth && py < gridHeight) {
@@ -155,31 +153,34 @@ function drawPixel(x, y, emit = true, color = null, size = null) {
       }
     }
 
-    if (emit) socket.emit("draw_pixel", { x, y, color: 'erase', size: brush });
+    if (emit && socket) {
+      socket.emit("draw_pixel", { x, y, color: 'erase', size });
+    }
     return;
   }
 
+  // normal drawing mode
   let colorToDraw = color || currentColor;
   if (shadeSlider.value > 0 && !color) {
     colorToDraw = shadeColor(currentColor, parseInt(shadeSlider.value));
   }
   ctx.fillStyle = colorToDraw;
 
-  for (let dx = 0; dx < brush; dx++) {
-    for (let dy = 0; dy < brush; dy++) {
+  for (let dx = 0; dx < brushSize; dx++) {
+    for (let dy = 0; dy < brushSize; dy++) {
       const px = x + dx;
       const py = y + dy;
       if (px < gridWidth && py < gridHeight) {
-        ctx.fillRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
+        if(brushSize == 1){ctx.fillRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
+          }else if(brushSize == ntr){ctx.fillRect((px - nr) * pixelSize, (py - nr) * pixelSize, pixelSize, pixelSize);}
       }
     }
   }
 
-  if (emit) {
-    socket.emit("draw_pixel", { x, y, color: colorToDraw, size: brush });
+  if (emit && socket) {
+    socket.emit("draw_pixel", { x, y, color: colorToDraw, size });
   }
 }
-//tu sie kończą zmiany
 
 
 function saveState(){
@@ -217,13 +218,23 @@ function redo(emit = true) {
 }
 
 
-// Potrzeba Zmiana do pipety sigma 1.01
+// Rysowanie myszy
 canvas.addEventListener('mousedown', e => {
- if (!isPipetteActive) {
+  if (isPipetteActive) {
+    const rect = canvas.getBoundingClientRect();
+const x = Math.floor((e.clientX - rect.left));
+const y = Math.floor((e.clientY - rect.top));
+    const pixelData = ctx.getImageData(x, y, 1, 1).data;
+    const hex = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
+    currentColor = hex;
+    colorPicker.value = hex;
+    isPipetteActive = false;
+    canvas.style.cursor = 'crosshair';
+    pipetteBtn.classList.remove('active');
+  } else {
     saveState();
     isDrawing = true;
-}
-
+  } 
 });
 
 eraserBtn.addEventListener('click', () => {
@@ -251,6 +262,9 @@ canvas.addEventListener('mousemove', e => {
   
 });
 
+canvas.addEventListener("scroll", () => {
+  applyZoom()
+});
 // Przyciski akcji
 undoBtn.addEventListener('click', () => undo());
 redoBtn.addEventListener('click', () => redo());
@@ -386,67 +400,20 @@ resizeBtn.addEventListener('click', () => {
 }
 });
 
-nightModeBtn.addEventListener('click', () => {
-  document.body.classList.toggle('night-mode');
-  nightModeBtn.classList.toggle('active');
-});
 
-// Pipeta 1.01 sigma
+// Pipeta
 const pipetteBtn = document.createElement('button');
 pipetteBtn.id = 'pipette-btn';
 pipetteBtn.className = 'icon-btn';
 pipetteBtn.title = 'Pipette Tool 🎨';
 pipetteBtn.textContent = '';
 document.querySelector('.navbar-icons').insertBefore(pipetteBtn, undoBtn);
-
 pipetteBtn.addEventListener('click', () => {
-    isPipetteActive = !isPipetteActive;
-    pipetteBtn.classList.toggle('active');
-    canvas.style.cursor = isPipetteActive ? 'copy' : 'crosshair';
+  isPipetteActive = !isPipetteActive;
+  pipetteBtn.classList.toggle('active');
+  canvas.style.cursor = isPipetteActive ? 'copy' : 'crosshair';
 });
 
-// SINGLE pipette event listener (no duplicates)
-canvas.addEventListener("mousedown", (e) => {
-    if (!isPipetteActive) return;
-
-    const rect = canvas.getBoundingClientRect();
-
-    // canvas pixel scaling (CSS px → real canvas px)
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    // click position in real canvas pixels
-    const canvasX = (e.clientX - rect.left) * scaleX;
-    const canvasY = (e.clientY - rect.top) * scaleY;
-
-    // convert real pixels → grid pixel coordinate
-    const gridX = Math.floor(canvasX / pixelSize);
-    const gridY = Math.floor(canvasY / pixelSize);
-
-    // validate bounds
-    if (gridX < 0 || gridY < 0 || gridX >= gridWidth || gridY >= gridHeight) {
-        isPipetteActive = false;
-        pipetteBtn.classList.remove("active");
-        canvas.style.cursor = "crosshair";
-        return;
-    }
-
-    // convert grid pixel → exact canvas pixel (top-left)
-    const readX = gridX * pixelSize;
-    const readY = gridY * pixelSize;
-
-    // read pixel color
-    const pixel = ctx.getImageData(readX, readY, 1, 1).data;
-    const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
-
-    currentColor = hex;
-    colorPicker.value = hex;
-
-    // disable pipette
-    isPipetteActive = false;
-    pipetteBtn.classList.remove("active");
-    canvas.style.cursor = "crosshair";
-});
 
 // Zmiana rozmiaru pędzla
 brushIncreaseBtn.addEventListener('click', () => {
@@ -484,8 +451,9 @@ function applyZoom() {
   wrapper.style.width = `${canvas.width * zoomLevel}px`;
   wrapper.style.height = `${canvas.height * zoomLevel}px`;
 }
+//IKONKI SIGMA
 const zoomInBtn = document.createElement('button');
-zoomOutBtn.innerHTML = `<img src="img/plus.png" alt="Zoom In"></img>`;
+zoomInBtn.innerHTML = `<img src="img/plus.png" alt="Zoom In">`;
 zoomInBtn.title = 'Zoom In';
 zoomInBtn.className = 'icon-btn';
 document.querySelector('.navbar-icons').appendChild(zoomInBtn);
@@ -516,12 +484,6 @@ document.addEventListener('keydown', e => {
   if (e.key.toLowerCase() === 'e') eraserBtn.click();
   if (e.key === '=') brushIncreaseBtn.click();
   if (e.key === '-') brushDecreaseBtn.click();
-  if (e.scrollLock) {
-    zoomInBtn.click();
-  }
-  if (e.scrollLock) {
-    zoomOutBtn.click();
-  }
 });
 
 // Inicjalizacja
@@ -605,5 +567,3 @@ socket.on("load_canvas_state", (imgData) => {
 });
 
 socket.emit("new_client_ready");
-
-
