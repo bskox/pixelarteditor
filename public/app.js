@@ -27,7 +27,7 @@ brushSizeSelect.value = 1;
 let zoomLevel = 1;
 const ZOOM_STEP = 0.1;
 const MAX_ZOOM = 5;
-const MIN_ZOOM = 0.2;
+const MIN_ZOOM = 0.;
 let nr = 0;
 let ntr = 1;
 let gridWidth = 32;
@@ -218,23 +218,13 @@ function redo(emit = true) {
 }
 
 
-// Rysowanie myszy
+// Potrzeba Zmiana do pipety sigma 1.01
 canvas.addEventListener('mousedown', e => {
-  if (isPipetteActive) {
-    const rect = canvas.getBoundingClientRect();
-const x = Math.floor((e.clientX - rect.left));
-const y = Math.floor((e.clientY - rect.top));
-    const pixelData = ctx.getImageData(x, y, 1, 1).data;
-    const hex = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
-    currentColor = hex;
-    colorPicker.value = hex;
-    isPipetteActive = false;
-    canvas.style.cursor = 'crosshair';
-    pipetteBtn.classList.remove('active');
-  } else {
+ if (!isPipetteActive) {
     saveState();
     isDrawing = true;
-  } 
+}
+
 });
 
 eraserBtn.addEventListener('click', () => {
@@ -402,19 +392,62 @@ nightModeBtn.addEventListener('click', () => {
   nightModeBtn.classList.toggle('active');
 });
 
-// Pipeta
+// Pipeta 1.01 sigma
 const pipetteBtn = document.createElement('button');
 pipetteBtn.id = 'pipette-btn';
 pipetteBtn.className = 'icon-btn';
 pipetteBtn.title = 'Pipette Tool 🎨';
 pipetteBtn.textContent = '';
 document.querySelector('.navbar-icons').insertBefore(pipetteBtn, undoBtn);
+
 pipetteBtn.addEventListener('click', () => {
-  isPipetteActive = !isPipetteActive;
-  pipetteBtn.classList.toggle('active');
-  canvas.style.cursor = isPipetteActive ? 'copy' : 'crosshair';
+    isPipetteActive = !isPipetteActive;
+    pipetteBtn.classList.toggle('active');
+    canvas.style.cursor = isPipetteActive ? 'copy' : 'crosshair';
 });
 
+// SINGLE pipette event listener (no duplicates)
+canvas.addEventListener("mousedown", (e) => {
+    if (!isPipetteActive) return;
+
+    const rect = canvas.getBoundingClientRect();
+
+    // canvas pixel scaling (CSS px → real canvas px)
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    // click position in real canvas pixels
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+
+    // convert real pixels → grid pixel coordinate
+    const gridX = Math.floor(canvasX / pixelSize);
+    const gridY = Math.floor(canvasY / pixelSize);
+
+    // validate bounds
+    if (gridX < 0 || gridY < 0 || gridX >= gridWidth || gridY >= gridHeight) {
+        isPipetteActive = false;
+        pipetteBtn.classList.remove("active");
+        canvas.style.cursor = "crosshair";
+        return;
+    }
+
+    // convert grid pixel → exact canvas pixel (top-left)
+    const readX = gridX * pixelSize;
+    const readY = gridY * pixelSize;
+
+    // read pixel color
+    const pixel = ctx.getImageData(readX, readY, 1, 1).data;
+    const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+
+    currentColor = hex;
+    colorPicker.value = hex;
+
+    // disable pipette
+    isPipetteActive = false;
+    pipetteBtn.classList.remove("active");
+    canvas.style.cursor = "crosshair";
+});
 
 // Zmiana rozmiaru pędzla
 brushIncreaseBtn.addEventListener('click', () => {
@@ -484,6 +517,12 @@ document.addEventListener('keydown', e => {
   if (e.key.toLowerCase() === 'e') eraserBtn.click();
   if (e.key === '=') brushIncreaseBtn.click();
   if (e.key === '-') brushDecreaseBtn.click();
+  if (e.scrollLock) {
+    zoomInBtn.click();
+  }
+  if (e.scrollLock) {
+    zoomOutBtn.click();
+  }
 });
 
 // Inicjalizacja
