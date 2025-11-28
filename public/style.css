@@ -7,6 +7,7 @@ body {
   position: relative;
   min-height: 100vh;
   overflow-x: hidden;
+  background-color: black;
 }
 
 /* Blurred background layer */
@@ -23,11 +24,9 @@ body::before {
   filter: blur(4px);
   z-index: -1; /* Keeps it behind all content */
 }
-
- 
-body.night-mode {
-  background: #25252a;
-  color: white;
+#open-btn-img{
+  width: 53px;
+  height: 23px;
 }
  #pipette-btn {
   width: 30px;
@@ -169,3 +168,4 @@ canvas {
 .brush-btn:hover {
   background: #ddd;
 }
+
