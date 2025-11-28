@@ -6,7 +6,7 @@ body {
   margin: 0;
   position: relative;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: show;
   background-color: black;
 }
 
@@ -24,10 +24,12 @@ body::before {
   filter: blur(4px);
   z-index: -1; /* Keeps it behind all content */
 }
+/* BUTTON ZMIANA SIGMA*/
 #open-btn-img{
   width: 53px;
   height: 23px;
 }
+ 
  #pipette-btn {
   width: 30px;
   height: 30px;
@@ -49,7 +51,7 @@ body::before {
   background-color: #25252a;
   color: white;
   padding: 5px 20px;
-  border-bottom: 2px solid #ccc;
+  border-bottom: 2px solid #1b1b1b;
   box-sizing: border-box;
   z-index: 1000;
   margin: 0;
@@ -168,4 +170,3 @@ canvas {
 .brush-btn:hover {
   background: #ddd;
 }
-
