@@ -220,21 +220,12 @@ function redo(emit = true) {
 
 // Rysowanie myszy
 canvas.addEventListener('mousedown', e => {
-  if (isPipetteActive) {
-    const rect = canvas.getBoundingClientRect();
-const x = Math.floor((e.clientX - rect.left));
-const y = Math.floor((e.clientY - rect.top));
-    const pixelData = ctx.getImageData(x, y, 1, 1).data;
-    const hex = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
-    currentColor = hex;
-    colorPicker.value = hex;
-    isPipetteActive = false;
-    canvas.style.cursor = 'crosshair';
-    pipetteBtn.classList.remove('active');
-  } else {
+  //zmiana potrzebna do pipety 1.01 sigma
+ if (!isPipetteActive) {
     saveState();
     isDrawing = true;
-  } 
+}
+//zmiana potrzebna do pipety konczy sie tutaj
 });
 
 eraserBtn.addEventListener('click', () => {
@@ -400,19 +391,56 @@ resizeBtn.addEventListener('click', () => {
 }
 });
 
-
-// Pipeta
+// Pipeta 1.01 sigma
 const pipetteBtn = document.createElement('button');
 pipetteBtn.id = 'pipette-btn';
 pipetteBtn.className = 'icon-btn';
 pipetteBtn.title = 'Pipette Tool 🎨';
 pipetteBtn.textContent = '';
 document.querySelector('.navbar-icons').insertBefore(pipetteBtn, undoBtn);
+
 pipetteBtn.addEventListener('click', () => {
-  isPipetteActive = !isPipetteActive;
-  pipetteBtn.classList.toggle('active');
-  canvas.style.cursor = isPipetteActive ? 'copy' : 'crosshair';
+    isPipetteActive = !isPipetteActive;
+    pipetteBtn.classList.toggle('active');
+    canvas.style.cursor = isPipetteActive ? 'copy' : 'crosshair';
 });
+
+// SINGLE pipette event listener (no duplicates)
+canvas.addEventListener("mousedown", (e) => {
+    if (!isPipetteActive) return;
+
+    const rect = canvas.getBoundingClientRect();
+
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+
+    const gridX = Math.floor(canvasX / pixelSize);
+    const gridY = Math.floor(canvasY / pixelSize);
+
+    if (gridX < 0 || gridY < 0 || gridX >= gridWidth || gridY >= gridHeight) {
+        isPipetteActive = false;
+        pipetteBtn.classList.remove("active");
+        canvas.style.cursor = "crosshair";
+        return;
+    }
+
+    const readX = gridX * pixelSize;
+    const readY = gridY * pixelSize;
+
+    const pixel = ctx.getImageData(readX, readY, 1, 1).data;
+    const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+
+    currentColor = hex;
+    colorPicker.value = hex;
+
+    isPipetteActive = false;
+    pipetteBtn.classList.remove("active");
+    canvas.style.cursor = "crosshair";
+});
+
 
 
 // Zmiana rozmiaru pędzla
