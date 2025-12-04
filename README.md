@@ -1,4 +1,4 @@
-# Dokumentacja projektu Pixel Art Editor
+# Dokumentacja Pixel Art Editor
 
 ## Spis treści
 1. [Opis projektu](#opis-projektu)
@@ -22,7 +22,7 @@
 
 ---
 
-## Opis projektu
+## Opis
 Pixel Art Editor to edytor grafiki pikselowej z możliwością współpracy w czasie rzeczywistym.  
 Funkcje obejmują: rysowanie pikseli, pipetę, gumkę, zmianę rozmiaru pędzla, zoom, cofanie/ponawianie akcji, eksport do PNG oraz wczytywanie obrazów.  
 Współpraca w czasie rzeczywistym realizowana jest przez Socket.IO.
