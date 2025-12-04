@@ -20,7 +20,7 @@
 ---
 
 ## Opis projektu
-Projekt jest edytorem pixel-art umożliwiającym rysowanie na siatce, pracę w czasie rzeczywistym przez Socket.IO, zmianę rozmiaru pędzla, korzystanie z gumki i pipety, cofanie/ponawianie, eksport do PNG oraz import obrazów.
+Projekt jest edytorem pixel-art który pozwala użytkownikowi na wykorzystanie multum funkcji wspomagające tworzenie grafik pikselowych (Narzędzia takie jak : Gumka, Pipeta, Zmiana rozmiarów pędzla i inne)
 
 ---
 
