@@ -2,7 +2,7 @@
 
 ## Spis treści
 1. [Opis projektu](#opis-projektu)
-2. [Moduły i funkcjonalności](#moduły-i-funkcjonalności)
+2. [Frontend](#frontend)
    - [1. Połączenie z serwerem](#1-połączenie-z-serwerem)
    - [2. Konfiguracja canvas oraz siatki](#2-konfiguracja-canvas-oraz-siatki)
    - [3. Rysowanie pikseli](#3-rysowanie-pikseli)
@@ -13,97 +13,103 @@
    - [8. Zoom obszaru roboczego](#8-zoom-obszaru-roboczego)
    - [9. Zapisywanie do PNG](#9-zapisywanie-do-png)
    - [10. Wczytywanie obrazów](#10-wczytywanie-obrazu)
-   - [11. Synchronizacja SocketIO](#11-synchronizacja-socketio)
+   - [11. Synchronizacja Socket.IO](#11-synchronizacja-socketio)
    - [12. Skróty klawiszowe](#12-skróty-klawiszowe)
-3. [Inicjalizacja aplikacji](#inicjalizacja-aplikacji)
+3. [Backend](#backend)
+   - [1. Serwer Node.js + Express](#1-serwer-nodejs--express)
+   - [2. Socket.IO – synchronizacja akcji](#2-socketio--synchronizacja-akcji)
+4. [Inicjalizacja aplikacji](#inicjalizacja-aplikacji)
 
 ---
 
 ## Opis projektu
-Projekt jest edytorem pixel-art który pozwala użytkownikowi na wykorzystanie multum funkcji wspomagające tworzenie grafik pikselowych (Narzędzia takie jak : Gumka, Pipeta, Zmiana rozmiarów pędzla i inne)
+Pixel Art Editor to edytor grafiki pikselowej z możliwością współpracy w czasie rzeczywistym.  
+Funkcje obejmują: rysowanie pikseli, pipetę, gumkę, zmianę rozmiaru pędzla, zoom, cofanie/ponawianie akcji, eksport do PNG oraz wczytywanie obrazów.  
+Współpraca w czasie rzeczywistym realizowana jest przez Socket.IO.
 
 ---
 
-## Moduły i funkcjonalności
+# Frontend
 
-### 1. Połączenie z serwerem
+## 1. Połączenie z serwerem
 ```js
 const socket = io();
 ```
-Nawiązuje połączenie z backendem i odpowiada za komunikację czasu rzeczywistego.
+Łączy klienta z backendem i umożliwia przesyłanie zdarzeń w czasie rzeczywistym.
 
 ---
 
-### 2. Konfiguracja canvas oraz siatki
+## 2. Konfiguracja canvas oraz siatki
 ```js
 function setCanvas()
 function drawGrid()
 ```
-- Tworzy element canvas o zadanych wymiarach (`gridWidth`, `gridHeight`, `pixelSize`)
-- Rysuje siatkę na oddzielnym płótnie
+- Tworzy obszar roboczy (`canvas`) o wymiarach `gridWidth × gridHeight × pixelSize`
+- Rysuje siatkę na osobnym canvasie (`gridCanvas`) w celu zachowania widoczności podczas malowania
 
 ---
 
-### 3. Rysowanie pikseli
+## 3. Rysowanie pikseli
 ```js
 function drawPixel(x, y, emit=true, color=null, size=brushSize)
 ```
-- Rysuje piksele o aktualnym kolorze i rozmiarze pędzla
+- Obsługuje rysowanie pędzlem o zmiennym rozmiarze
 - Obsługuje gumkę i shading koloru
-- Może emitować akcję do innych użytkowników (collab)
+- Wysyła akcję do innych użytkowników, jeśli `emit=true`
 
 ---
 
-### 4. Cofanie i ponawianie (Undo/Redo)
+## 4. Cofanie i ponawianie (Undo/Redo)
 ```js
 function saveState()
 function undo(emit=true)
 function redo(emit=true)
 ```
-- Stan przechowywany w `undoStack` i `redoStack`
-- Przesyła zmiany między klientami przez socket
+- Historia rysunku przechowywana w stosach `undoStack` i `redoStack`
+- Undo/Redo mogą być synchronizowane z innymi klientami
 
 ---
 
-### 5. Pipeta
-Pobiera kolor z płótna na podstawie pozycji kursora przy kliknięciu.
+## 5. Pipeta
+- Pobiera kolor z wybranego piksela na canvasie
+- Aktualizuje `currentColor` oraz `colorPicker.value`
 
 ---
 
-### 6. Gumka
-Włącza tryb kasowania pikseli. Dezaktywuje pipetę w przypadku kolizji trybów.
+## 6. Gumka
+- Usuwa piksele zamiast je malować
+- Wyłącza pipetę w przypadku kolizji trybów
 
 ---
 
-### 7. Rozmiar pędzla
-Zakres regulacji 1–10. Zmiana wpływa na ilość pikseli rysowanych jednocześnie.
+## 7. Rozmiar pędzla
+- Zakres 1–10
+- Zmiana rozmiaru wpływa na liczbę rysowanych pikseli
 
 ---
 
-### 8. Zoom obszaru roboczego
+## 8. Zoom obszaru roboczego
 ```js
 applyZoom()
 ```
-Skalowanie widoku canvasu CSS-em, obsługa przyciskami oraz kółkiem myszy.
+- Skalowanie canvasu CSS `transform: scale(...)`
+- Obsługa przyciskami oraz scroll kółkiem myszy
 
 ---
 
-### 9. Zapisywanie do PNG
-```js
-saveBtn.addEventListener('click', ...)
-```
-Eksportuje aktualny projekt jako obraz PNG.
+## 9. Zapisywanie do PNG
+- Pobiera stan canvas i zapisuje jako plik PNG
 
 ---
 
-### 10. Wczytywanie obrazu
-Możliwość importu grafiki. W przypadku obrazów z edytora zachowane metadane pikselowe.
+## 10. Wczytywanie obrazu
+- Obsługa importu plików graficznych
+- Automatyczne dostosowanie siatki przy obrazach wygenerowanych w edytorze
 
 ---
 
-### 11. Synchronizacja SocketIO
-Kanały obsługiwane przez aplikację:
-
+## 11. Synchronizacja Socket.IO
+Kanały:
 ```
 draw_pixel
 clear_canvas
@@ -113,25 +119,84 @@ load_canvas_state
 send_canvas_state
 request_canvas_state
 ```
+- Umożliwia współpracę wielu użytkowników w czasie rzeczywistym
 
 ---
 
-### 12. Skróty klawiszowe
+## 12. Skróty klawiszowe
 
-| Skrót | Działanie |
-|------|-----------|
+| Skrót | Funkcja |
+|-------|---------|
 | Ctrl + Z | Cofnij |
 | Ctrl + Y / Ctrl + Shift + Z | Ponów |
 | E | Gumka |
 | P | Pipeta |
-| Delete / Backspace | Czyszczenie canvasu |
+| Delete / Backspace | Wyczyść canvas |
 | + / - | Zmiana rozmiaru pędzla |
 
 ---
 
-## Inicjalizacja aplikacji
+# Backend
+
+## 1. Serwer Node.js + Express
 ```js
+const express = require("express");
+const http = require("http");
+const path = require("path");
+const { Server } = require("socket.io");
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+const PORT = 3000;
+server.listen(PORT, () => {
+  console.log(`Pixel Art Editor działa na http://localhost:${PORT}`);
+});
+```
+- Serwer statycznych plików w katalogu `public`
+- Endpoint główny `/` zwraca `index.html`
+- Uruchomienie serwera na porcie 3000
+
+---
+
+## 2. Socket.IO – synchronizacja akcji
+```js
+io.on("connection", (socket) => {
+  console.log("Użytkownik połączony:", socket.id);
+
+  socket.on("draw_pixel", (data) => socket.broadcast.emit("draw_pixel", data));
+  socket.on("clear_canvas", () => socket.broadcast.emit("clear_canvas"));
+  socket.on("undo_action", (data) => socket.broadcast.emit("load_canvas_state", data));
+  socket.on("redo_action", (data) => socket.broadcast.emit("load_canvas_state", data));
+  socket.on("load_canvas_state", (data) => socket.broadcast.emit("load_canvas_state", data));
+  socket.on("send_canvas_state", (data) => socket.broadcast.emit("load_canvas_state", data));
+  socket.on("new_client_ready", () => socket.broadcast.emit("request_canvas_state"));
+
+  socket.on("disconnect", () => console.log("Użytkownik rozłączony:", socket.id));
+});
+```
+- Obsługuje wysyłanie akcji rysowania i stanu canvasu między klientami
+- Synchronizuje cofanie/ponawianie oraz import obrazów
+- Zapewnia nowym klientom pobranie aktualnego stanu
+
+---
+
+# Inicjalizacja aplikacji
+```js
+// Frontend
 setCanvas();
 socket.emit("new_client_ready");
-```
 
+// Backend
+node server.js
+```
+- Inicjalizuje canvas
+- Powiadamia serwer o nowym kliencie, aby pobrać aktualny stan
+- Serwer nasłuchuje połączeń i synchronizuje akcje w czasie rzeczywistym
