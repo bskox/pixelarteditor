@@ -7,14 +7,15 @@
    - [2. Konfiguracja canvas oraz siatki](#2-konfiguracja-canvas-oraz-siatki)
    - [3. Rysowanie pikseli](#3-rysowanie-pikseli)
    - [4. Cofanie i ponawianie (Undo/Redo)](#4-cofanie-i-ponawianie-undoredo)
-   - [5. Pipeta](#5-pipeta)
-   - [6. Gumka](#6-gumka)
-   - [7. Rozmiar pędzla](#7-rozmiar-pędzla)
-   - [8. Zoom obszaru roboczego](#8-zoom-obszaru-roboczego)
-   - [9. Zapisywanie do PNG](#9-zapisywanie-do-png)
-   - [10. Wczytywanie obrazów](#10-wczytywanie-obrazu)
-   - [11. Synchronizacja Socket.IO](#11-synchronizacja-socketio)
-   - [12. Skróty klawiszowe](#12-skróty-klawiszowe)
+   - [5. Funkcje konwersji](#5-funkcje-konwersji)
+   - [6. Pipeta](#6-pipeta)
+   - [7. Gumka](#7-gumka)
+   - [8. Rozmiar pędzla](#8-rozmiar-pędzla)
+   - [9. Zoom obszaru roboczego](#9-zoom-obszaru-roboczego)
+   - [10. Zapisywanie do PNG](#10-zapisywanie-do-png)
+   - [11. Wczytywanie obrazów](#11-wczytywanie-obrazu)
+   - [12. Synchronizacja Socket.IO](#12-synchronizacja-socketio)
+   - [13. Skróty klawiszowe](#13-skróty-klawiszowe)
 3. [Backend](#backend)
    - [1. Serwer Node.js + Express](#1-serwer-nodejs--express)
    - [2. Socket.IO – synchronizacja akcji](#2-socketio--synchronizacja-akcji)
@@ -69,26 +70,38 @@ function redo(emit=true)
 - Undo/Redo mogą być synchronizowane z innymi klientami
 
 ---
+## 5. Funkcje konwersji
+```js
+function hexToRgb(hex)
+function rgbToHsl(r, g, b)
+function hslToRgb(h, s, l)
+function shadeColor(hex, amount)
+```
+- Zamiana wartosci heksadecymalnej koloru na zapis RGB(Red,Green,Blue)
+- Zamiana wartosci RGB na zapis HSL(Hue, Saturation, Lightness)
+- Zamiana wartosci HSL spowrotem na zapis RGB
+- Funkcja cieniowania koloru, wykorzystuje wartosc heksadecymalna(hex) i ilosc cieniowania(amount)
 
-## 5. Pipeta
+---
+## 6. Pipeta
 - Pobiera kolor z wybranego piksela na canvasie
 - Aktualizuje `currentColor` oraz `colorPicker.value`
 
 ---
 
-## 6. Gumka
+## 7. Gumka
 - Usuwa piksele zamiast je malować
 - Wyłącza pipetę w przypadku kolizji trybów
 
 ---
 
-## 7. Rozmiar pędzla
+## 8. Rozmiar pędzla
 - Zakres 1–10
 - Zmiana rozmiaru wpływa na liczbę rysowanych pikseli
 
 ---
 
-## 8. Zoom obszaru roboczego
+## 9. Zoom obszaru roboczego
 ```js
 applyZoom()
 ```
@@ -97,18 +110,18 @@ applyZoom()
 
 ---
 
-## 9. Zapisywanie do PNG
+## 10. Zapisywanie do PNG
 - Pobiera stan canvas i zapisuje jako plik PNG
 
 ---
 
-## 10. Wczytywanie obrazu
+## 11. Wczytywanie obrazu
 - Obsługa importu plików graficznych
 - Automatyczne dostosowanie siatki przy obrazach wygenerowanych w edytorze
 
 ---
 
-## 11. Synchronizacja Socket.IO
+## 12. Synchronizacja Socket.IO
 Kanały:
 ```
 draw_pixel
@@ -123,7 +136,7 @@ request_canvas_state
 
 ---
 
-## 12. Skróty klawiszowe
+## 13. Skróty klawiszowe
 
 | Skrót | Funkcja |
 |-------|---------|
