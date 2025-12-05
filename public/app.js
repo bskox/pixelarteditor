@@ -141,45 +141,53 @@ function shadeColor(hex, amount){
 }
 
 // rysowanie pixeli i emitowanie rozmiaru pedzla
-
 function drawPixel(x, y, emit = true, color = null, size = null) {
-  const brush = size || brushSize;
+  const brush = (typeof size === 'number' && size > 0) ? size : brushSize;
 
-  if (isEraserActive && !color) {
+  const offset = Math.floor(brush / 2);
+  const startX = x - offset;
+  const startY = y - offset;
+
+  const isErase = (color === 'erase') || (isEraserActive && color === null);
+
+  if (isErase) {
     for (let dx = 0; dx < brush; dx++) {
       for (let dy = 0; dy < brush; dy++) {
-        const px = x + dx;
-        const py = y + dy;
-        if (px < gridWidth && py < gridHeight) {
+        const px = startX + dx;
+        const py = startY + dy;
+        if (px >= 0 && py >= 0 && px < gridWidth && py < gridHeight) {
           ctx.clearRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
         }
       }
     }
 
-    if (emit) socket.emit("draw_pixel", { x, y, color: 'erase', size: brush });
+    if (emit && socket) {
+      socket.emit("draw_pixel", { x, y, color: 'erase', size: brush });
+    }
     return;
   }
 
   let colorToDraw = color || currentColor;
-  if (shadeSlider.value > 0 && !color) {
+  if (shadeSlider && shadeSlider.value > 0 && !color) {
     colorToDraw = shadeColor(currentColor, parseInt(shadeSlider.value));
   }
+
   ctx.fillStyle = colorToDraw;
 
   for (let dx = 0; dx < brush; dx++) {
     for (let dy = 0; dy < brush; dy++) {
-      const px = x + dx;
-      const py = y + dy;
-      if (px < gridWidth && py < gridHeight) {
+      const px = startX + dx;
+      const py = startY + dy;
+      if (px >= 0 && py >= 0 && px < gridWidth && py < gridHeight) {
         ctx.fillRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
       }
     }
   }
 
-  if (emit) {
+  if (emit && socket) {
     socket.emit("draw_pixel", { x, y, color: colorToDraw, size: brush });
   }
-}  
+}
 //koniec zmian
 
 function saveState(){
@@ -594,4 +602,5 @@ socket.on("load_canvas_state", (imgData) => {
 });
 
 socket.emit("new_client_ready");
+
 
