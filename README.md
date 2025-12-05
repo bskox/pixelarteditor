@@ -56,7 +56,7 @@ function drawPixel(x, y, emit=true, color=null, size=brushSize)
 ```
 - Obsługuje rysowanie pędzlem o zmiennym rozmiarze
 - Obsługuje gumkę i shading koloru
-- Wysyła akcję do innych użytkowników, jeśli `emit=true`
+- Wysyła akcję do innych użytkowników, jeśli `emit=true` co pozwala na rysowanie w czasie rzeczywistym na innych przegladarkach lokalnie
 
 ---
 
@@ -66,8 +66,8 @@ function saveState()
 function undo(emit=true)
 function redo(emit=true)
 ```
-- Historia rysunku przechowywana w stosach `undoStack` i `redoStack`
-- Undo/Redo mogą być synchronizowane z innymi klientami
+- Historia rysunku przechowywana w stosach `undoStack` i `redoStack` co pozwala na cofanie bledow popelnionych w trakcie rysowania
+- Undo/Redo mogą być synchronizowane z innymi klientami co pozwala na cofanie na innych przegladarkach
 
 ---
 ## 5. Funkcje konwersji
@@ -86,13 +86,13 @@ function shadeColor(hex, amount)
 ## 6. Pipeta
 - Pobiera kolor z wybranego piksela na canvasie
 - Aktualizuje `currentColor` oraz `colorPicker.value`
-
+- Dzieki pipecie uzytkownik ma wiekszy komfort wyboru koloru jak i zmiany
 ---
 
 ## 7. Gumka
 - Usuwa piksele zamiast je malować
 - Wyłącza pipetę w przypadku kolizji trybów
-
+- Gumka tak jak pedzel pozwala na powiekszanie i pomniejszanie
 ---
 
 ## 8. Rozmiar pędzla
@@ -106,13 +106,15 @@ function shadeColor(hex, amount)
 applyZoom()
 ```
 - Skalowanie canvasu CSS `transform: scale(...)`
-- Obsługa przyciskami oraz scroll kółkiem myszy
+- Obsługa przyciskami + i - w prawym gornym rogu.
+- Przyblizanie pozwala na dokladniejsze rysowanie.
+- Oddalanie pozwala na wglad w caly canvas, jak prezentuje sie rysunek w calosci itp.
 
 ---
 
 ## 10. Zapisywanie do PNG
 - Pobiera stan canvas i zapisuje jako plik PNG
-
+- Pobierane zdjecie posiada transparent background, co ulatwia tworzenie grafik do gier czy aplikacji
 ---
 
 ## 11. Wczytywanie obrazu
@@ -133,7 +135,7 @@ send_canvas_state
 request_canvas_state
 ```
 - Umożliwia współpracę wielu użytkowników w czasie rzeczywistym
-
+- Imituje czynnosci dla kazdego uzytkownika, co oznacza ze kazda funkcja wykonana bedzie przesylana do innych uzytkownikow w czasie rzeczywistym
 ---
 
 ## 13. Skróty klawiszowe
@@ -144,8 +146,9 @@ request_canvas_state
 | Ctrl + Y / Ctrl + Shift + Z | Ponów |
 | E | Gumka |
 | P | Pipeta |
+| R | Resize Canvasu |
 | Delete / Backspace | Wyczyść canvas |
-| + / - | Zmiana rozmiaru pędzla |
+| = / - | Zmiana rozmiaru pędzla |
 
 ---
 
