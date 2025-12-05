@@ -140,11 +140,14 @@ function shadeColor(hex, amount){
   return rgbToHex(shaded.r, shaded.g, shaded.b);
 }
 
-// Rysowanie pikseli
-function drawPixel(x, y, emit = true, color = null, size = brushSize) {
-  if (isEraserActive) {
-    for (let dx = 0; dx < brushSize; dx++) {
-      for (let dy = 0; dy < brushSize; dy++) {
+// rysowanie pixeli i emitowanie rozmiaru pedzla
+
+function drawPixel(x, y, emit = true, color = null, size = null) {
+  const brush = size || brushSize;
+
+  if (isEraserActive && !color) {
+    for (let dx = 0; dx < brush; dx++) {
+      for (let dy = 0; dy < brush; dy++) {
         const px = x + dx;
         const py = y + dy;
         if (px < gridWidth && py < gridHeight) {
@@ -153,35 +156,31 @@ function drawPixel(x, y, emit = true, color = null, size = brushSize) {
       }
     }
 
-    if (emit && socket) {
-      socket.emit("draw_pixel", { x, y, color: 'erase', size });
-    }
+    if (emit) socket.emit("draw_pixel", { x, y, color: 'erase', size: brush });
     return;
   }
 
-  // normal drawing mode
   let colorToDraw = color || currentColor;
   if (shadeSlider.value > 0 && !color) {
     colorToDraw = shadeColor(currentColor, parseInt(shadeSlider.value));
   }
   ctx.fillStyle = colorToDraw;
 
-  for (let dx = 0; dx < brushSize; dx++) {
-    for (let dy = 0; dy < brushSize; dy++) {
+  for (let dx = 0; dx < brush; dx++) {
+    for (let dy = 0; dy < brush; dy++) {
       const px = x + dx;
       const py = y + dy;
       if (px < gridWidth && py < gridHeight) {
-        if(brushSize == 1){ctx.fillRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
-          }else if(brushSize == ntr){ctx.fillRect((px - nr) * pixelSize, (py - nr) * pixelSize, pixelSize, pixelSize);}
+        ctx.fillRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
       }
     }
   }
 
-  if (emit && socket) {
-    socket.emit("draw_pixel", { x, y, color: colorToDraw, size });
+  if (emit) {
+    socket.emit("draw_pixel", { x, y, color: colorToDraw, size: brush });
   }
-}
-
+}  
+//koniec zmian
 
 function saveState(){
   undoStack.push(ctx.getImageData(0,0,canvas.width,canvas.height));
@@ -595,3 +594,4 @@ socket.on("load_canvas_state", (imgData) => {
 });
 
 socket.emit("new_client_ready");
+
